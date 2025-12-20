@@ -1,0 +1,7 @@
+python-dotenv
+PyMySQL
+spyne
+lxml
+zeep
+requests
+PyJWT

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # --- AUTH SERVICE ---
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    env_file: .env
+    ports:
+      - "8004:8000"
+
+  # --- KAFKA EVENT CONSUMER ---
+  event-consumer:
+    build:
+      context: ./event-consumer
+      dockerfile: Dockerfile
+    container_name: event-consumer
+    env_file: ./event-consumer/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -21,8 +21,8 @@ class DanaServiceHTTP2User(HttpUser):
         response = self.client.post(
             "http://localhost:8004/api/v1/login",
             json={
-                "username": "loadtest",
-                "password": "loadtest123"
+                "username": "damar",
+                "password": "damar123"
             },
             name="Auth: Login",
             verify=False

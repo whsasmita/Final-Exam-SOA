@@ -1,11 +1,11 @@
 import os
 import hashlib
 import pymysql
-from fastapi import FastAPI, HTTPException
-from jose import jwt
+from fastapi import FastAPI, HTTPException, Depends, Header
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from .schemas import LoginSchema, RegisterSchema, Token
+from .schemas import LoginSchema, RegisterSchema, Token, UpdateAccountSchema, UpdateAccountResponse
 
 load_dotenv()
 
@@ -127,4 +127,75 @@ async def login(data: LoginSchema):
         "access_token": access_token,
         "token_type": "bearer",
         "account_number": row["account_number"]
+    }
+
+# JWT Verification Dependency
+async def verify_token(authorization: str = Header(...)):
+    """Extract and verify JWT token from Authorization header."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    
+    token = authorization.replace("Bearer ", "")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+@app.put(f"{API_V1_STR}/account/update", response_model=UpdateAccountResponse)
+async def update_account(data: UpdateAccountSchema, current_username: str = Depends(verify_token)):
+    """Update username dan/atau password untuk user yang sedang login."""
+    if not data.username and not data.password:
+        raise HTTPException(status_code=400, detail="Minimal satu field harus diisi (username atau password)")
+    
+    try:
+        conn = _get_connection()
+        with conn.cursor() as cur:
+            # Validasi user exists
+            cur.execute("SELECT id FROM users WHERE username = %s", (current_username,))
+            user_row = cur.fetchone()
+            if not user_row:
+                raise HTTPException(status_code=404, detail="User tidak ditemukan")
+            
+            user_id = user_row["id"]
+            new_username = data.username if data.username else current_username
+            
+            # Jika update username, cek apakah username baru sudah dipakai user lain
+            if data.username and data.username != current_username:
+                cur.execute("SELECT id FROM users WHERE username = %s", (data.username,))
+                if cur.fetchone():
+                    raise HTTPException(status_code=400, detail="Username sudah dipakai user lain")
+            
+            # Build update query
+            if data.username and data.password:
+                hashed = hashlib.sha256(data.password.encode()).hexdigest()
+                cur.execute(
+                    "UPDATE users SET username = %s, password = %s WHERE id = %s",
+                    (data.username, hashed, user_id)
+                )
+            elif data.username:
+                cur.execute(
+                    "UPDATE users SET username = %s WHERE id = %s",
+                    (data.username, user_id)
+                )
+            elif data.password:
+                hashed = hashlib.sha256(data.password.encode()).hexdigest()
+                cur.execute(
+                    "UPDATE users SET password = %s WHERE id = %s",
+                    (hashed, user_id)
+                )
+            
+            conn.commit()
+        conn.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Update gagal: {str(e)}")
+    
+    return {
+        "message": "Akun berhasil diupdate",
+        "username": new_username
     }

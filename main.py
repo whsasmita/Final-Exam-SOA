@@ -219,6 +219,56 @@ def transfer_menu():
         print(f"❌ Error: {e}")
 
 
+def edit_account_menu():
+    """Edit account (username/password) via FastAPI Auth."""
+    print("\n" + "=" * 50)
+    print("EDIT ACCOUNT")
+    print("=" * 50)
+    print("Kosongkan field jika tidak ingin diubah")
+    print("=" * 50)
+
+    try:
+        new_username = input("Username baru (kosongkan jika tidak diubah): ").strip()
+        new_password = input("Password baru (kosongkan jika tidak diubah): ").strip()
+
+        if not new_username and not new_password:
+            print("❌ Minimal satu field harus diisi")
+            return
+
+        payload = {}
+        if new_username:
+            payload["username"] = new_username
+        if new_password:
+            payload["password"] = new_password
+
+        headers = {"Authorization": f"Bearer {current_token}"}
+        resp = requests.put(
+            f"{FASTAPI_AUTH_URL}/account/update",
+            json=payload,
+            headers=headers,
+            timeout=5
+        )
+        
+        data = resp.json()
+        
+        if resp.status_code != 200:
+            print(f"❌ Error: {data.get('detail', 'Unknown error')}")
+            return
+        
+        # Update global username if changed
+        global current_user
+        if new_username:
+            current_user = new_username
+        
+        print(f"\n✅ {data.get('message')}")
+        print(f"   Username sekarang: {data.get('username')}")
+        if new_password:
+            print("   Password berhasil diubah")
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+
 def show_menu():
     """Show main menu."""
     print("\n" + "=" * 50)
@@ -228,7 +278,8 @@ def show_menu():
         print("1. Get Account Info")
         print("2. Topup Dana")
         print("3. Transfer Dana")
-        print("4. Logout")
+        print("4. Edit Account")
+        print("5. Logout")
         print("0. Exit")
     else:
         print("DANA SERVICE CLI - NOT LOGGED IN")
@@ -265,7 +316,7 @@ def main():
         
         if current_user:
             # Authenticated menu
-            choice = input("Pilih menu (0-4): ").strip()
+            choice = input("Pilih menu (0-5): ").strip()
             
             if choice == "1":
                 get_account_info()
@@ -274,6 +325,8 @@ def main():
             elif choice == "3":
                 transfer_menu()
             elif choice == "4":
+                edit_account_menu()
+            elif choice == "5":
                 logout()
             elif choice == "0":
                 print("\n👋 Terima kasih! Sampai jumpa.")

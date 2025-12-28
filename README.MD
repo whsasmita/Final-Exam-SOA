@@ -373,38 +373,5 @@ telnet localhost 19092
 
 ---
 
-## 📚 Architecture Reference
-
-- **SOAP Framework**: Spyne 2.14.0
-- **FastAPI**: v0.95.0+ (Uvicorn untuk HTTP/1.1, Hypercorn untuk HTTP/2)
-- **Authentication**: JWT (HS256, 30min expiry)
-- **Database**: MySQL 8.0
-- **Message Queue**: Apache Kafka
-- **HTTP/2**: Python httpx client, Hypercorn server
-
----
-
-## ✅ Checklist: Ready for Testing
-
-- [ ] Python 3.8+ installed
-- [ ] MySQL database running & dana_service_db created
-- [ ] Kafka broker running on localhost:19092
-- [ ] Dependencies installed (both root & fastapi_dana_SOA)
-- [ ] SOAP Services (3x) running
-- [ ] Auth Service running
-- [ ] Gateway Service running
-- [ ] Event Consumer running
-- [ ] TLS cert generated (if using HTTP/2)
-- [ ] Tested login via CLI or Postman
-
----
-
-## 📞 Support
-
-Jika ada error, check:
-1. **Terminal output** untuk error message
-2. **MySQL logs**: `mysql -u root -p -e "SHOW ENGINE INNODB STATUS;"`
-3. **Kafka logs**: Check broker logs
-4. **Service logs**: Lihat output terminal masing-masing service
 
 Semua service harus running agar sistem bekerja optimal!

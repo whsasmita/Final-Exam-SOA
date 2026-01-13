@@ -16,15 +16,16 @@ class DanaServiceHTTP2User(HttpUser):
     insecure = True
     
     def on_start(self):
-        """Login once per user to get JWT token."""
-        # Register/Login to get token (Auth service on HTTP/1.1)
+        """Register new user per spawn to get fresh JWT token and account."""
+        # Always register fresh user with unique username
+        username = f"loadtest{random.randint(10000, 99999)}"
         response = self.client.post(
-            "http://localhost:8004/api/v1/login",
+            "http://localhost:8004/api/v1/register",
             json={
-                "username": "damar",
-                "password": "damar123"
+                "username": username,
+                "password": "loadtest123"
             },
-            name="Auth: Login",
+            name="Auth: Register",
             verify=False
         )
         
@@ -32,23 +33,17 @@ class DanaServiceHTTP2User(HttpUser):
             data = response.json()
             self.token = data.get("access_token")
             self.account_number = data.get("account_number")
-        else:
-            # Try register if login fails
-            response = self.client.post(
-                "http://localhost:8004/api/v1/register",
-                json={
-                    "username": f"loadtest{random.randint(1000, 9999)}",
-                    "password": "loadtest123"
-                },
-                name="Auth: Register",
+            # Do initial topup so transfer has balance
+            self.client.post(
+                "/api/v1/topup",
+                json={"amount": 500000},  # Initial balance
+                headers={"Authorization": f"Bearer {self.token}"},
+                name="Auth: Initial Topup",
                 verify=False
             )
-            if response.status_code == 200:
-                data = response.json()
-                self.token = data.get("access_token")
-                self.account_number = data.get("account_number")
-            else:
-                self.token = None
+        else:
+            self.token = None
+            self.account_number = None
     
     @task(3)
     def get_account_info(self):

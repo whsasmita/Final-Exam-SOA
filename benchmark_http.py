@@ -30,7 +30,7 @@ def get_token():
         # Try login with demo account
         resp = requests.post(
             "http://localhost:8004/api/v1/login",
-            json={"username": "damar", "password": "damar123"},
+            json={"username": "nia", "password": "nia12345"},
             timeout=5
         )
         if resp.status_code == 200:
